@@ -2,19 +2,20 @@ import { useState, useEffect } from "react";
 
 interface SearchBarProps {
     onSearch: (query: string) => void;
+    delay?: number; 
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSearch}) => {
+const SearchBar: React.FC<SearchBarProps> = ({ onSearch, delay=1000}) => {
     const [input, setInput] = useState<string>('');
     const [debouncedInput, setDebouncedInput] = useState<string>(input);
 
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedInput(input);
-        });
+        }, delay);
 
         return () => clearTimeout(handler);
-    }, [input]);
+    }, [input, delay]);
 
     useEffect(() => {
         onSearch(debouncedInput);
