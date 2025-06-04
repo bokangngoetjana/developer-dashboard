@@ -37,7 +37,7 @@ const HomePage: React.FC = () => {
 return(
     <main>
         <h1>GitHub Developer Dashboard</h1>
-        <SearchBar onSearch={handleSearch} />
+        <SearchBar onSearch={handleSearch} delay={1000} />
 
         {loading && <p>Loading...</p>}
         {error && <p className="error">{error}</p>}
