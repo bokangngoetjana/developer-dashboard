@@ -15,7 +15,10 @@ const HomePage: React.FC = () => {
     const [error, setError] = useState<string>('');
 
     const handleSearch = async (query: string): Promise<void> => {
-        if(!query){
+        if(!query.trim()){
+            setUsers([]);
+            setError('');
+            setLoading(false);
             return;
         }
         try{
