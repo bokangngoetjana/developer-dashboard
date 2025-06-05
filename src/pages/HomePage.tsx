@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useState } from "react";
 import Pagination from "../components/Pagination.tsx";
 import SearchBar from "../components/SearchBar.tsx";
+import { Link } from "react-router-dom";
 
 //user data expected from the GitHub API
 interface GitHubUser{
@@ -19,37 +20,72 @@ const HomePage: React.FC = () => {
     const [error, setError] = useState<string>('');
     const [page, setPage] = useState<number>(1);
     const [query, setQuery] = useState<string>('');
-
-    useEffect(() => {
-        const fetchUsers = async () => {
-            if(!query.trim() || query.length < 3){
-                setUsers([]);
-                setError('');
-                setLoading(false);
-                return;
+    const [since, setSince] = useState<number>(0); //since parameter for pagination
+    
+    const fetchDefaultUsers = async (sinceValue: number) => {
+        try{
+            setLoading(true);
+            setError('');
+            const res = await fetch(`https://api.github.com/users?since=${sinceValue}&per_page=${USERS_PER_PAGE}`);
+            if(!res.ok){
+                throw new Error('Failed to fetch users');
             }
-            try{
-                setLoading(true);
-                setError('');
-                const response = await fetch(`https://api.github.com/search/users?q=${encodeURIComponent(query)}&per_page=${USERS_PER_PAGE}&page=${page}`);
-                if(!response.ok){
-                    throw new Error('Failed to fetch users');
-                }
-                const data = await response.json();
-                setUsers(data.items || []);
-            }catch(err){
-                setError('Something went wrong while fetching users');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchUsers();
-    }, [query, page]); //fetch users when query or page changes
+            const data = await res.json();
+            setUsers(data);
+        }catch(err){
+            setError('Something went wrong while fetching users');
+        }finally {
+            setLoading(false);
+        }
+    };
 
-     const handleSearch = (searchQuery: string): void => {
+    const fetchSearchedUsers = async (searchQuery: string, page: number) => {
+        try{
+            setLoading(true);
+            setError('');
+            const res = await fetch(`https://api.github.com/search/users?q=${searchQuery}&per_page=${USERS_PER_PAGE}&page=${page}`);
+            if(!res.ok){
+                throw new Error('Failed to fetch users');
+            }
+            const data = await res.json();
+            setUsers(data.items || []);
+        }catch(err){
+            setError('Something went wrong while searching users');
+        }finally {
+            setLoading(false);
+        }};
+
+        useEffect(() => {
+    if (query.trim().length >= 3) {
+      fetchSearchedUsers(query, page);
+    } else {
+      fetchDefaultUsers(since);
+    }
+  }, [query, page, since]);
+
+     const handleSearch = (searchQuery: string) => {
        setQuery(searchQuery);
        setPage(1); //reset to first page on new search
+       setSince(0); //reset since for default users
     };
+
+    const handlePrev = () => {
+    if (query.trim().length >= 3) {
+      setPage((prev) => Math.max(prev - 1, 1));
+    } else {
+      setSince((prev) => Math.max(prev - USERS_PER_PAGE, 0));
+    }
+  };
+  const handleNext = () => {
+    if (query.trim().length >= 3) {
+      setPage((prev) => prev + 1);
+    } else {
+      // GitHub's /users endpoint requires "since" to be the last user's ID
+      const lastUserId = users.length > 0 ? users[users.length - 1].id : since + USERS_PER_PAGE;
+      setSince(lastUserId);
+    }
+  };
+
 return(
     <main>
         <h1>GitHub Developer Dashboard</h1>
@@ -63,18 +99,18 @@ return(
                 <div key={id} className="border p-4 rounded-md shadow-sm bg-white">
                     <img src={avatar_url} alt={login} className="w-16 h-16 rounded-full mb-2" />
                     <h2 className="text-lg font-semibold">{login}</h2>
-                    <a href={html_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                    <Link to={`/user/${login}`} className="text-blue-500 hover:underline">
                         View Profile 
-                    </a>
+                    </Link>
                 </div>
             ))}
         </section>
 
         {users.length > 0 && (
             <Pagination
-                page={page}
-                onPrev={() => setPage((prev) => Math.max(prev - 1, 1))}
-                onNext={() => setPage((prev) => prev + 1)}
+               page={query ? page : since / USERS_PER_PAGE + 1}
+               onPrev={handlePrev}
+               onNext={handleNext}
             />
         )}
     </main>
