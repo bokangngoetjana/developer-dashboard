@@ -1,24 +1,33 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
-interface UserCardProps {
-    avatarUrl: string;
+interface GitHubUser{
+    id: number;
     login: string;
-    htmlUrl: string;
+    avatar_url: string;
+    html_url: string;
 }
 
-const UserCard: React.FC<UserCardProps> = ({ avatarUrl, login, htmlUrl }) => {
+interface UserCardProps {
+    user: GitHubUser;
+    isFavorite?: boolean;
+    onAddFavorite: (user: GitHubUser) => void;
+    onRemoveFavorite: (userId: number) => void;
+}
+
+const UserCard: React.FC<UserCardProps> = ({ user, isFavorite, onAddFavorite, onRemoveFavorite }) => {
     return (
         <div className="border p-4 rounded-md shadow-sm bg-white">
-            <img src={avatarUrl} alt={login} className="w-16 h-16 rounded-full mb-2" />
-            <h2 className="text-lg font-semibold">{login}</h2>
-            <a
-                href={htmlUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline"
-            >
+            <img src={user.avatar_url} alt={user.login} className="w-16 h-16 rounded-full mb-2" />
+            <h2 className="text-lg font-semibold">{user.login}</h2>
+            <Link to={`/user/${user.login}`} className="text-blue-500 hover:underline">
                 View Profile
-            </a>
+            </Link>
+            { isFavorite ? (
+                <button onClick={() => onRemoveFavorite(user.id)} className="px-3 py-1 bg-red-500 text-white rounded-md mt-2">Remove FGavorite</button>
+            ) : (
+                <button onClick={() => onAddFavorite?.(user)} className="px-3 py-1 bg-green-500 text-white rounded-md mt-2">Add to Favorites</button>
+            )}
         </div>
     );
 }
