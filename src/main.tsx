@@ -15,5 +15,5 @@ createRoot(document.getElementById('root')!).render(
       <Router path="/favorites" element={< FavoritesPage/>} />
     </Routes>
     </BrowserRouter>
-  </StrictMode>,
+  </StrictMode>
 )
