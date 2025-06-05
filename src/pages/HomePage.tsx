@@ -2,8 +2,8 @@ import React, { useEffect } from "react";
 import { useState } from "react";
 import Pagination from "../components/Pagination.tsx";
 import SearchBar from "../components/SearchBar.tsx";
+import UserCard from "../components/UserCard.tsx";
 import { Link } from "react-router-dom";
-
 //user data expected from the GitHub API
 interface GitHubUser{
         id: number;
@@ -13,6 +13,10 @@ interface GitHubUser{
 }
 
 const USERS_PER_PAGE = 20;
+<nav className="p-4 bg-gray-100 mb-4">
+  <Link to="/" className="mr-4 text-blue-600 hover:underline">Home</Link>
+  <Link to="/favorites" className="text-blue-600 hover:underline">Favorites</Link>
+</nav>
 
 const HomePage: React.FC = () => {
     const [users, setUsers] = useState<GitHubUser[]>([]); //array of search results
@@ -21,6 +25,10 @@ const HomePage: React.FC = () => {
     const [page, setPage] = useState<number>(1);
     const [query, setQuery] = useState<string>('');
     const [since, setSince] = useState<number>(0); //since parameter for pagination
+    const [favorites, setFavorites] = useState<GitHubUser[]>(() => {
+        const saved = localStorage.getItem('favorites');
+        return saved ? JSON.parse(saved) : [];
+    });
     
     const fetchDefaultUsers = async (sinceValue: number) => {
         try{
@@ -85,6 +93,28 @@ const HomePage: React.FC = () => {
       setSince(lastUserId);
     }
   };
+const addFavorite = (user: GitHubUser) => {
+    setFavorites((prev) => {
+        const exists = prev.some(fav => fav.id === user.id);
+        if (exists) return prev;
+        const updated = [...prev, user];
+        localStorage.setItem('favorites', JSON.stringify(updated));
+        return updated;
+    })
+};
+
+const removeFavorite = (userId: number) => {
+    setFavorites(prev => {
+      const updated = prev.filter(fav => fav.id !== userId);
+      localStorage.setItem('favorites', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const isFavorite = (userId: number) => {
+    return favorites.some(fav => fav.id === userId);
+  };
+
 
 return(
     <main>
@@ -94,17 +124,17 @@ return(
         {loading && <p>Loading...</p>}
         {error && <p className="error">{error}</p>}
 
-        <section>
-            {users.map(({id, login, avatar_url, html_url}) => (
-                <div key={id} className="border p-4 rounded-md shadow-sm bg-white">
-                    <img src={avatar_url} alt={login} className="w-16 h-16 rounded-full mb-2" />
-                    <h2 className="text-lg font-semibold">{login}</h2>
-                    <Link to={`/user/${login}`} className="text-blue-500 hover:underline">
-                        View Profile 
-                    </Link>
-                </div>
-            ))}
-        </section>
+         <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+        {users.map((user) => (
+          <UserCard
+            key={user.id}
+            user={user}
+            isFavorite={isFavorite(user.id)}
+            onAddFavorite={addFavorite}
+            onRemoveFavorite={removeFavorite}
+          />
+        ))}
+      </section>
 
         {users.length > 0 && (
             <Pagination
